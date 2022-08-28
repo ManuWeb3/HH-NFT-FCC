@@ -3,9 +3,21 @@ const { ethers } = require("hardhat")
 const networkConfig = {
     4: {
         name: "rinkeby",
-     },
+        vrfCoordinatorV2: "0x6168499c0cFfCaCD319c818142124B7A15E857ab",
+        entranceFee: ethers.utils.parseEther("0.01"),
+        gasLane: "0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc",
+        subscriptionId: "10325",                                                        // temp. assign Zero
+        callbackGasLimit: "500000",                                                     // set high: 500,000 gas units
+        interval: "30"                                                                  // 30 seconds
+    },
     31337: {
         name: "hardhat",
+        // vrfCoordinatorV2: NOT needed here because we're deploying mocks on "hardhat" and "localhost".
+        entranceFee: ethers.utils.parseEther("0.01"),
+        gasLane: "0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc",  // anything here will work, value does not matter, bcz our mock will anyway mock the gasLane value
+        callbackGasLimit: "500000",                                                      // set high: 500,000 gas units, though it hardly matters here again
+        interval: "30"                                                                  // 30 seconds, it DOES matter here
+        // subscriptionId: NOT needed here because we're deploying mocks on "hardhat" and "localhost"
     }
 }
 
