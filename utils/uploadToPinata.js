@@ -34,10 +34,6 @@ async function storeImages (imagesFilePath) {
         try {
             // pinata stuff, after creating Pinata_Key and Secret
             const response = await pinata.pinFileToIPFS(readableStreamForFiles)
-            // we're talking to Pinata node of IPFS, not just IPFS using these end points
-            // pinFileToIPFS() - pins only 1 file at a time, hence the for loop
-            // has to input ReadStream's instance, arg.
-            // push the returned response to responses array, per file, per iteration
             responses.push(response)
         }
         catch (error) {
@@ -48,7 +44,18 @@ async function storeImages (imagesFilePath) {
     // both got populated inside this f()
 }
 
-module.exports = {storeImages}
+async function storeTokenUriMetadata(metadata) {
+    try {
+        const response = await pinata.pinJSONToIPFS(metadata)
+        return response
+    }
+    catch (error) {
+        console.log(error)
+    }
+    return null    
+}
+
+module.exports = {storeImages, storeTokenUriMetadata}
 
 /*----------------------------------------------------------------------------------------------------------------*/
 // Details of some of the f() used above
@@ -103,3 +110,24 @@ you can refer to those by IPFS Hash and import in Pinata a/c & get it pinned the
 // So, whenever my IPFS node goes down, it won't be visible to anyone...
 // only the pinned ones wil be visible
 // I can use unpin() endpoint
+
+/* 7. pinata.pinFileToIPFS(readStream[, optional: 2 options])
+// returns: (we're interested only in IPFS Hash)
+// 1. IpfsHash:  the IPFS hash of the pinned files
+// 2. PinSize: size of the content that you just pinned
+// 3. TimeStamp: when you get it pinned
+
+// need to add that very hash to our metadata for all 3 pinned files
+// we're talking to Pinata node of IPFS, not just IPFS using these end points
+// pinFileToIPFS() - pins only 1 file at a time, hence the for loop
+// has to input ReadStream's instance, arg.
+// push the returned response to responses array, per file, per iteration
+// console.log(`Response# ${fileIndex}: ${response}`) - does not work
+*/
+
+/* 8. pinJSONToIPFS(body[, options 2: optional]):
+// Send JSON to Pinata for direct pinning to IPFS. 
+// body: valid JSON that we want to pin to IPFS
+// returns: 
+// same 3 params that are returned in pinFileTOIPFS() above
+*/
