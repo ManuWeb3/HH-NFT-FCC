@@ -20,8 +20,7 @@ if (developmentChains.includes(network.name)){
         log: true,
         args: args,
     })
-    log("Mock deployed!")
-    log("----------------------------------------------")
+    log("----------------Mock deployed!------------")
 }
     
 }

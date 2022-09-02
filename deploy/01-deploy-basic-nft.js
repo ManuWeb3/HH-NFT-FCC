@@ -7,7 +7,7 @@ module.exports = async function ({getNamedAccounts, deployments}) {     // get a
     const {deploy, log} = deployments
     const {deployer} = await getNamedAccounts()
 
-    log("-------------------------------")
+    log("-----Deploying BasicNFT Smart Contract----------")
     log(`Deployer: ${deployer}`)
 
     //  1. Deploy
@@ -18,7 +18,7 @@ module.exports = async function ({getNamedAccounts, deployments}) {     // get a
         log: true,
         waitConfirmations: network.config.blockConfirmations || 1,      //  After adding Network info in config.js, we've put in the variable, not a specific value, unless needed for giving more time to wait.
     })
-    log("-------------------------------")
+    log("------Deployed BasicNFT!!---------")
     
     //  2. Verify on Etherscan, if it's Rinkeby
     if(!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {

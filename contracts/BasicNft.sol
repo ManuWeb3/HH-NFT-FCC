@@ -23,6 +23,8 @@ contract BasicNft is ERC721 {
         emit Minted(msg.sender, s_tokenCounter);
         s_tokenCounter++;
         //  return s_tokenCounter;                      //  not serving any purpose, can be removed
+        // we did NOT call _setTokenURI() from ERC721URIStorage as...
+        // as the TokenURI is a constant here and everyone will be linked to the same tokenURI
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {

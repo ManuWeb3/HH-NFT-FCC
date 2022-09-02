@@ -79,6 +79,8 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     //  hence, MAPPING
     address dogOwner = s_requestIdToSender[requestId];
     uint256 newTokenId = s_tokenCounter;
+    // increment the tokenCounter for the next, whenever it happens
+    s_tokenCounter++;
     //  modded values
     //  only 1 Random word / number requested, so array index = 0 only
     uint256 moddedRng = randomWords[0] % 100;
@@ -98,6 +100,10 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     //  2. invoke the _setTokenURI() in ERC721.sol - but discontinued there now. 
     //  3. Use this same f() defined ion ERC721URIStorage.sol
     _setTokenURI(newTokenId, s_dogTokenURIs[uint256(dogBreed)]);
+    // we have 3 constant TokenURIs here but still have to link every minted NFT token to one of those 3... 
+    // that's why have to use _setTokenUri() here, depending upon which of the 3 pictures, RANDOMLY,... 
+    // the dogOnwer got lnked to in this minting.
+    // Not needed in BasicNFT.sol as onl 1 constant tokenURI was there 
     emit NftMinted(dogBreed, dogOwner);
     }
 
