@@ -31,11 +31,16 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
     describe("Testing MintNft()", function() {
         //  have to call the functions individually
         it("Updated 2 mappings: _balances[] and _owners[] & incremented tokenCounter", async function() {
-            tokenCounter = await basicNft.getTokenCounter()
+            
             const txResponse = await basicNft.mintNft()                 //  mintNft() itself takes no args
             //  tokenCounter = await basicNft.getTokenCounter()         //  tokenCounter got incremented already, hence no owner, hence throws
-            const txReceipt = await txResponse.wait(1)
-            console.log(`Transaction Receipt: ${txReceipt}`)
+            
+            // wait(1) only doine to print txeceipt as it wasn't getting printed. It is not needed here, ideally.
+            // const txReceipt = await txResponse.wait(1)
+            // console.log(`Transaction Receipt: ${JSON.stringify(txReceipt)}`)
+            
+            tokenCounter = await basicNft.getTokenCounter()             // after minting, counter = 1
+            console.log(`Token Counter after minting: ${tokenCounter}`)
 
             const tokenBalance = await basicNft.balanceOf(deployer)     
             const tokenOwner = await basicNft.ownerOf(tokenCounter)     
@@ -43,10 +48,9 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
             assert.equal(tokenBalance.toString(), "1")
             assert.equal(tokenOwner.toString(), deployer)  
             //  checking whether tokenCounter incremented by 1
-            tokenCounter = await basicNft.getTokenCounter()
+            // tokenCounter = await basicNft.getTokenCounter()
             assert.equal(tokenCounter.toString(), "1")
-
-            })
+        })
 
         it("Should emit Minted event", async function() {
             //  have to call the functions individually, SPECIALLY for event-emit check
@@ -54,8 +58,9 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
             // const zeroAddress = await basicNft.zeroAddress()
             // console.log(`zeroAddress: ${zeroAddress}`)
             console.log(`Deployer: ${deployer}`)
-            console.log(`Token Counter: ${tokenCounter}`)
-            await expect(await basicNft.mintNft().to.emit(basicNft, "Minted").withArgs(deployer, tokenCounter))
+            console.log(`Token Counter before MintNft(): ${tokenCounter}`)
+            console.log(`Token Counter should be: ${tokenCounter+1} after mintNft()`)
+            await expect(basicNft.mintNft()).to.emit(basicNft, "Minted").withArgs(deployer, tokenCounter+1)
         })
     })
 

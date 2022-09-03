@@ -64,7 +64,7 @@ module.exports = async function ({getNamedAccounts, deployments}) {     // get a
         // get subId in this case, create the Subscription
         const txResponse = await vrfCoordinatorV2.createSubscription() 
         const txReceipt = await txResponse.wait(1)
-        // console.log(`Transaction Receipt: ${txReceipt}`)    // Is not getting printed ??
+        //console.log(`Transaction Receipt: ${JSON.stringify(txReceipt)}`)    // Is not getting printed ??
         subscriptionId = txReceipt.events[0].args.subId     // 'subId' var comes from event SubscriptionCreated(uint64 indexed subId, address owner) in MOCK
         
         // we have to Fund the Subscription as well

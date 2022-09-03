@@ -70,12 +70,27 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
         })
 
         it("Name and Symbol are set correctly", async function () {
-            
+            const name = await randomIpfsNft.name()
+            const symbol = await randomIpfsNft.symbol()
+
+            assert.equal(name, "Random IPFS NFT")
+            assert.equal(symbol, "RIN")
         })
 
      })
     
-    //  describe("Testing requestNft()", function() {
-    //     it("")
-    //  })
+     describe("Testing requestNft()", function() {
+        it("Should revert if insufficient funds sent", async function () {
+            // call with value: 0 OR skipping value: arg altogether
+            await expect(randomIpfsNft.requestNft()).to.be.revertedWith("RandomIpfsNft__NeedMoreETHSent")
+        })
+
+        it("RRW() should run only when requestNft() is invoked", async function () {
+            await expect(vrfCoordinatorV2.fulfillRandomWords(0, randomIpfsNft.address)).to.be.revertedWith("nonexistent request")
+        })
+
+        it.only("Maps requestId to the Requester (Minter)", async function() {
+
+        })
+     })
 })

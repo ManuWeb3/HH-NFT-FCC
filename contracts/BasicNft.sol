@@ -19,9 +19,10 @@ contract BasicNft is ERC721 {
     }
 
     function mintNft() public {       //  But, does this actually return anything? Events... 
+        s_tokenCounter++;
         _safeMint(msg.sender, s_tokenCounter);          //  it does not throw any error if we make a setter f() to return something
         emit Minted(msg.sender, s_tokenCounter);
-        s_tokenCounter++;
+        
         //  return s_tokenCounter;                      //  not serving any purpose, can be removed
         // we did NOT call _setTokenURI() from ERC721URIStorage as...
         // as the TokenURI is a constant here and everyone will be linked to the same tokenURI
