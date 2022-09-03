@@ -29,4 +29,5 @@ module.exports = async function ({getNamedAccounts, deployments}) {     // get a
     }
 }
 
-module.exports.tags = ["all", "basicNft"]
+module.exports.tags = ["basicNft"]
+// removed "all" from the above tag for Unit-testing RandomIpfsNft.sol (and Mock)

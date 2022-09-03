@@ -5,8 +5,8 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract BasicNft is ERC721 {
-    
-    event Minted(address indexed owner, uint256 tokenId);
+
+    event Minted(address indexed owner, uint256 indexed tokenId);
 
     uint256 private s_tokenCounter;
 

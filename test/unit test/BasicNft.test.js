@@ -35,7 +35,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
             const txResponse = await basicNft.mintNft()                 //  mintNft() itself takes no args
             //  tokenCounter = await basicNft.getTokenCounter()         //  tokenCounter got incremented already, hence no owner, hence throws
             const txReceipt = await txResponse.wait(1)
-            //  console.log(`Transaction Receipt: ${txReceipt}`)
+            console.log(`Transaction Receipt: ${txReceipt}`)
 
             const tokenBalance = await basicNft.balanceOf(deployer)     
             const tokenOwner = await basicNft.ownerOf(tokenCounter)     
@@ -48,21 +48,19 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
             })
 
-        
-
-        /*it("Should emit Transfer event", async function() {
+        it("Should emit Minted event", async function() {
             //  have to call the functions individually, SPECIALLY for event-emit check
             tokenCounter = await basicNft.getTokenCounter()
-            //const zeroAddress = await basicNft.zeroAddress()
-            //console.log(`zeroAddress: ${zeroAddress}`)
-            console.log(`Token Counter: ${tokenCounter}`)
+            // const zeroAddress = await basicNft.zeroAddress()
+            // console.log(`zeroAddress: ${zeroAddress}`)
             console.log(`Deployer: ${deployer}`)
-            expect(await basicNft.mintNft().to.emit(basicNft, "Minted").withArgs(deployer, tokenCounter))
-        })*/
+            console.log(`Token Counter: ${tokenCounter}`)
+            await expect(await basicNft.mintNft().to.emit(basicNft, "Minted").withArgs(deployer, tokenCounter))
+        })
     })
 
     describe("Testing tokenURI", function() {
-        it.only("tokenURI should be set correctly", async function (){
+        it("tokenURI should be set correctly", async function (){
             const tokenURI = await basicNft.tokenURI(2)             //  works for all uint256 values: 0,1,2... as it's just symbolic arg
             assert.equal(tokenURI, await basicNft.TOKEN_URI())      //  no need to run mintNft() to test this
             //  comparing the set-constant value with the returned value of f() as it was never used during our Unit tests
