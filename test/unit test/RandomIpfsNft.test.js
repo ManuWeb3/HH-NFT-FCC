@@ -134,11 +134,49 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
         it("Should revert with Out-of-bounds moddedRng number", async function() {
             await expect(randomIpfsNft.getBreedFromModdedRng(100)).to.be.reverted
-
         })
      })
 
+     // 4 asserts in 1 test, Massive Promise test again bcz we want to imitate the testnet exactly on local dev. n/w
+     // Exception. Ideally, 1 assert per it()
      describe("Testing fulfillRandomWords()", function () {
-        
-     })
-})
+        it("Should set 'deployer' inside _safeMint(), assigns tokenCounter to the tokenId, increments tokenCounter, and then emits event ", async function () {
+            // call requestNft() by deployer (minter)... has to be called once here anyway...
+            // only then the process kicks off and eventually, ffRW2() will be called
+            await randomIpfsNft.requestNft({value: mintFee})
+            
+            // 1. assert
+            // re-check 's_requestIdToSender' mapping, why?...
+            // earlier we just checked that the mapping-assigning works...
+            // now, we're checking that despite CL VRF node being the msg.sender of this ffRW2(), the _safeMint() links the tokenId to the deployer only...
+            // bcz 1st arg that it _safeMint() takes is msg.sender
+            const minter = await randomIpfsNft.s_requestIdToSender(requestId)       
+
+            // 2. assert
+            
+            
+            await new Promise (async function (resolve, reject) {
+                randomIpfsNft.once("NftMinted", async function() {
+                    console.log("Found the emitted NftMinted event!!")
+                    // get all latest values after ffRW2() has run, for asserts.
+                    try {
+                        // 1. assert
+                        assert.equal(minter, deployer)
+                        // 2. assert
+
+                        resolve()
+                    }
+                    catch(error) {
+                        consllelog("Shit man... some error occured")
+                        reject(error)
+                    }
+                })
+
+                // outside event but inside the Promise block
+
+
+                })
+            })
+
+        })
+    })

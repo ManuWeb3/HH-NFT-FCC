@@ -76,13 +76,12 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     //  requestId is needed in NFT.sol bcz many users will be manually minting the NFTs. hence, mappings needed
     //  Audio @ Sept. 04: 16:50
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {    //  when randomWords' array is returned by VRFCood (when it expands 1 random word into many, as requested by consumer contracts)
-    //  
     //  auto-called internally, Not externally
     //  can't call _safeMint(msg.sender, ... ) here bcz that will make CL VRF node the NFT owner...
     //  bcz CL node is msg.sender that invokes ffRW2() internally
 
     //  hence, MAPPING
-    address dogOwner = s_requestIdToSender[requestId];  
+    address dogOwner = s_requestIdToSender[requestId];  /*assert*/
     uint256 newTokenId = s_tokenCounter;                /*assert*/
     // increment the tokenCounter for the next, whenever it happens
     s_tokenCounter++;                                   /*assert*/
