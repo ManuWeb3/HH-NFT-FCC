@@ -89,8 +89,56 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
             await expect(vrfCoordinatorV2.fulfillRandomWords(0, randomIpfsNft.address)).to.be.revertedWith("nonexistent request")
         })
 
-        it.only("Maps requestId to the Requester (Minter)", async function() {
+        it("Maps requestId to the Requester (Minter)", async function() {
+            const mintFee = await randomIpfsNft.getMintFee()
+            const txResponse = await randomIpfsNft.requestNft({value: mintFee})
+            const txReceipt = await txResponse.wait(1)
+            const requestId = txReceipt.events[1].args.requestId
+            // console.log(`RequestId: ${requestId}`)
+            assert(requestId > 0)
+            const minter = await randomIpfsNft.s_requestIdToSender(requestId)
+            // console.log(`Minter: ${minter}`)
+            // console.log(`Deployer: ${deployer}`)
+            assert.equal(minter, deployer)
+            // event in next assert, ideally 1 it() should have 1 assert only
+            // await expect(randomIpfsNft.requestNft({value: mintFee})).to.emit(randomIpfsNft, "NftRequested").withArgs(requestId.toNumber()+1, deployer)
+        })
+
+        // Event emit has already been checked thru retrieval of requestId above...
+        // likewise we did in Raffle.sol and we can leave it there..
+        // Still, checking event.
+        it("Should emit NftRequested event - withArgs: RequestId & deployer", async function () {
+            const mintFee = await randomIpfsNft.getMintFee()
+            const txResponse = await randomIpfsNft.requestNft({value: mintFee})
+            const txReceipt = await txResponse.wait(1)
+            const requestId = txReceipt.events[1].args.requestId
+            await expect(randomIpfsNft.requestNft({value: mintFee})).to.emit(randomIpfsNft, "NftRequested").withArgs(requestId.toNumber()+1, deployer)
+        })
+     })
+
+     /* describe ("Testing getChanceArray()", function () {
+        it("Should return the array of 3 uint256 Constants", async function() {
+            let chanceValues = []
+            chanceValues = await randomIpfsNft.getChanceArray()
+            assert.equal(chanceValues[0].toString(), "10")
+            assert.equal(chanceValues[1].toString(), "30")
+            assert.equal(chanceValues[2].toString(), await randomIpfsNft.MAX_CHANCE_VALUE().toString())
+        })
+     })*/
+
+     describe("Testing getBreedFromModdedRng()", function() {
+        it("Should return correct Dog Breed", async function() {
+            const dogBreed = await randomIpfsNft.getBreedFromModdedRng(99)
+            assert.equal(dogBreed, "2")
+        })
+
+        it("Should revert with Out-of-bounds moddedRng number", async function() {
+            await expect(randomIpfsNft.getBreedFromModdedRng(100)).to.be.reverted
 
         })
+     })
+
+     describe("Testing fulfillRandomWords()", function () {
+        
      })
 })

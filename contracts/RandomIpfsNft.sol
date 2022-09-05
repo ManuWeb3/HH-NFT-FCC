@@ -6,6 +6,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 error RandomIpfsNft__RangeOutOfBounds();
 error RandomIpfsNft__NeedMoreETHSent();
@@ -25,7 +26,7 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     //  for setting URIs to the respective images of selected Dog Breeds
     string[] internal s_dogTokenURIs;
     //  Type Declaration for enums, structs, etc.
-    enum Breed {Dog, Shiba_Inu, St_Bernard}                        //  no semi-colon, backend uint256 0,1,2...
+    enum Breed {Pug, Shiba_Inu, St_Bernard}                        //  no semi-colon, backend uint256 0,1,2...
     //  mintFee for users to pay and owner to withdraw
     uint256 internal immutable i_mintFee;
     //  ReqId to Owner - mapping
@@ -40,8 +41,10 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     uint32 private constant NUM_WORDS = 1;
 
     //  NFT variables
-    uint256 public s_tokenCounter;
-    uint256 public constant MAX_CHANCE_VALUE = 100;
+    uint256 private s_tokenCounter;
+    uint256 internal constant MAX_CHANCE_VALUE = 100;
+    bool private s_initialized;
+    // to see if the enum Breed 
 
     //  Events:
     event NftRequested(uint256 indexed requestId, address requester);
@@ -71,28 +74,32 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     }
 
     //  requestId is needed in NFT.sol bcz many users will be manually minting the NFTs. hence, mappings needed
+    //  Audio @ Sept. 04: 16:50
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {    //  when randomWords' array is returned by VRFCood (when it expands 1 random word into many, as requested by consumer contracts)
+    //  
     //  auto-called internally, Not externally
     //  can't call _safeMint(msg.sender, ... ) here bcz that will make CL VRF node the NFT owner...
     //  bcz CL node is msg.sender that invokes ffRW2() internally
 
     //  hence, MAPPING
-    address dogOwner = s_requestIdToSender[requestId];
-    uint256 newTokenId = s_tokenCounter;
+    address dogOwner = s_requestIdToSender[requestId];  
+    uint256 newTokenId = s_tokenCounter;                /*assert*/
     // increment the tokenCounter for the next, whenever it happens
-    s_tokenCounter++;
+    s_tokenCounter++;                                   /*assert*/
+    // incremented before _safeMint() below but after assigning its own value to newTokenId
+
     //  modded values
     //  only 1 Random word / number requested, so array index = 0 only
-    uint256 moddedRng = randomWords[0] % 100;
+    uint256 moddedRng = randomWords[0] % 100;           
     //  returns 0-99
-    //  0-10: Dog
-    //  11-30: Shiba Inu
-    //  31-100: St. Bernard
+    //  0-9: Dog
+    //  10-29: Shiba Inu
+    //  30-99: St. Bernard
 
     //  select the Dog Breed
-    Breed dogBreed = getBreedFromModdedRng(moddedRng);
+    Breed dogBreed = getBreedFromModdedRng(moddedRng);  
     //  now call safeMint()
-    _safeMint(dogOwner, newTokenId);
+    _safeMint(dogOwner, newTokenId);        // first time, '0' is assigned to newTokenId, assigned to dogOwner
 
     //  Part 4 - Set NFT image:
     //  3 methods to connect the randomly selected Dog Breed and its tokenURI, for the image
@@ -104,7 +111,7 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     // that's why have to use _setTokenUri() here, depending upon which of the 3 pictures, RANDOMLY,... 
     // the dogOnwer got lnked to in this minting.
     // Not needed in BasicNFT.sol as onl 1 constant tokenURI was there 
-    emit NftMinted(dogBreed, dogOwner);
+    emit NftMinted(dogBreed, dogOwner);                     /*assert*/
     }
 
     // Last part: Withdrawal by artist / owner who created those 'varying-rarity' images that users want to (mint and ) own
@@ -117,19 +124,22 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
         if(!success) {
             revert RandomIpfsNft__TransferFailed();
         }
-        
     }
 
-    function getBreedFromModdedRng(uint256 moddedRng) public view returns (Breed) {
+    function getBreedFromModdedRng(uint256 moddedRng) public pure returns (Breed) {
         uint256 cumulativeSum = 0;
         //  access ChanceArray
         uint256[3] memory chanceArray = getChanceArray();
         
         for (uint256 i=0; i < chanceArray.length; i++) {
-            if(moddedRng >= cumulativeSum && moddedRng < cumulativeSum + chanceArray[i]) {
+            // console.log("Iteration round:");     // to use this, you have to make the f() - view, not pure
+            // console.log(i);                      // f() invoke can make f() view / pure, not just reading state var.
+            if (moddedRng >= cumulativeSum && moddedRng < chanceArray[i]) {
                 return Breed(i);
             }
-            cumulativeSum += chanceArray[i];            
+            cumulativeSum = chanceArray[i]; 
+            // simply checking whether: moddedRng lies b/w 0-10, 10-30, 30-100...
+            // accordingly,m return the Breed(i)         
         }
         //  if Rng out of bounds, then revert
         revert RandomIpfsNft__RangeOutOfBounds();
@@ -138,7 +148,7 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     //  Part 3: Create Rarity of 3 dogs
     //  internal so that called internally only
     //  view as returning only constant array + memory declaration
-    function getChanceArray() internal view returns(uint256[3] memory) {
+    function getChanceArray() internal pure returns(uint256[3] memory) {
         return [10, 30, MAX_CHANCE_VALUE];
     //  10% chance - Dog
     //  20% - Shiba inu
