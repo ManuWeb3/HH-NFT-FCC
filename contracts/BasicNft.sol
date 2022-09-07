@@ -28,7 +28,7 @@ contract BasicNft is ERC721 {
         // as the TokenURI is a constant here and everyone will be linked to the same tokenURI
     }
 
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    function tokenURI(uint256 tokenId) public pure override returns (string memory) {
         //  require(_exists(tokenId))   // commented out bcz we're not passing the tokenId for now...
         return TOKEN_URI;
         //  f() can be made 'pure' bcz reading a constant var is Not reading from storage, as it's a part of the bytecode directly
