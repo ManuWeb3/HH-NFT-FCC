@@ -1,4 +1,5 @@
 const { assert, expect } = require("chai")
+const { mnemonicToSeed } = require("ethers/lib/utils")
 const { deployments, getNamedAccounts, ethers, network, getChainId } = require("hardhat")
 const { developmentChains, networkConfig } = require("../../helper-hardhat-config")
 
@@ -21,7 +22,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
     describe("Testing Constructor", function () {
         it("The address of VRFCoordinatorV2Mock is correct:", async function() {
-            console.log(`vrfCoordinatorV2Address before getting any value: ${vrfCoordinatorV2Address}`) // undefined, for now
+            // console.log(`vrfCoordinatorV2Address before getting any value: ${vrfCoordinatorV2Address}`) // undefined, for now
             vrfCoordinatorV2Address = vrfCoordinatorV2.address                            // after getting the value       
             
             if(vrfCoordinatorV2Address.toString() != undefined) {
@@ -33,7 +34,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
         // exactly same it("") for callbackGasLimit...leave it
         it("GasLane is set correctly", async function () {
             const gasLane = await randomIpfsNft.getGasLane()
-            console.log(`GasLane value: ${gasLane}`)
+            // console.log(`GasLane value: ${gasLane}`)
             // if(gasLane.toString() != undefined) {
             //     deployed = true
             // }
@@ -137,46 +138,110 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
         })
      })
 
-     // 4 asserts in 1 test, Massive Promise test again bcz we want to imitate the testnet exactly on local dev. n/w
+     // 2 asserts in 1 test, Massive Promise test again bcz we want to imitate the testnet exactly on local dev. n/w
      // Exception. Ideally, 1 assert per it()
      describe("Testing fulfillRandomWords()", function () {
-        it("Should set 'deployer' inside _safeMint(), assigns tokenCounter to the tokenId, increments tokenCounter, and then emits event ", async function () {
+        it("Should set 'deployer' inside _safeMint(), increments tokenCounter, and then emits event ", async function () {
+            const mintFee = await randomIpfsNft.getMintFee()
             // call requestNft() by deployer (minter)... has to be called once here anyway...
             // only then the process kicks off and eventually, ffRW2() will be called
-            await randomIpfsNft.requestNft({value: mintFee})
-            
+            const txResponse = await randomIpfsNft.requestNft({value: mintFee})
+            const txReceipt = await txResponse.wait(1)
+            const requestId = txReceipt.events[1].args.requestId
             // 1. assert
             // re-check 's_requestIdToSender' mapping, why?...
             // earlier we just checked that the mapping-assigning works...
             // now, we're checking that despite CL VRF node being the msg.sender of this ffRW2(), the _safeMint() links the tokenId to the deployer only...
             // bcz 1st arg that it _safeMint() takes is msg.sender
+            
             const minter = await randomIpfsNft.s_requestIdToSender(requestId)       
 
             // 2. assert
-            
+            tokenCounter = await randomIpfsNft.getTokenCounter()        // it is '0' for now
             
             await new Promise (async function (resolve, reject) {
                 randomIpfsNft.once("NftMinted", async function() {
-                    console.log("Found the emitted NftMinted event!!")
+                    console.log("Found the emitted event: NftMinted!!")
                     // get all latest values after ffRW2() has run, for asserts.
                     try {
                         // 1. assert
                         assert.equal(minter, deployer)
                         // 2. assert
-
+                        const incTokenCounter = await randomIpfsNft.getTokenCounter()
+                        assert.equal(tokenCounter.toNumber()+1, incTokenCounter.toString())
+                        // .toString() concatenates '0' and '1' to '01', hence mismatch with '1'.
                         resolve()
                     }
                     catch(error) {
-                        consllelog("Shit man... some error occured")
+                        console.log("Shit man... some error occured")
+                        
                         reject(error)
                     }
                 })
-
-                // outside event but inside the Promise block
-
-
+                // outside event but inside the Promise block...
+                // manually invoke ffRW1(), we mimic being the CL VRF here to emit the event "NftMinted" eventually
+                await vrfCoordinatorV2.fulfillRandomWords(requestId, randomIpfsNft.address) 
                 })
             })
+        })
 
+        describe("Testing withdraw()", function () {
+
+            // code another beforeEach() if requestNft() is repetitively needed for every it() for later withdrawal
+
+            it("Should send all the balance of the contract to the deployer - Single Minter", async function() {
+                const accounts = await ethers.getSigners()
+                // Fund the contract
+                const mintFee = await randomIpfsNft.getMintFee()
+                await randomIpfsNft.requestNft({value: mintFee})
+                // get Contract's balance after funding - custom f() getBalance()
+                const contractBalanceAfterFunding = await randomIpfsNft.getBalance()
+                // console.log(`contractBalanceAfterFunding: ${contractBalanceAfterFunding}`)
+                // get deployer's balance after funcding - standard f() getBalance()
+                const deployerBalanceAfterFunding = await accounts[0].getBalance()
+                // console.log(`deployerBalanceAfterFunding: ${deployerBalanceAfterFunding}`)
+                // Withdraw from the contract
+                // INVOKED BY THE DEPLOYER, GAS SPENT OUT OF ITS BALANCE = 43,598,932,072,524...copy @ Sep 06.
+                const tx  = await randomIpfsNft.withdraw()
+                const txReceipt = await tx.wait(1)
+                const {gasUsed, effectiveGasPrice} = txReceipt    
+                const gasCost = gasUsed.mul(effectiveGasPrice)   
+                //console.log(`txReceipt: ${JSON.stringify(txReceipt)}`)
+                //console.log(`Transaction Response: ${JSON.stringify(tx)}`)
+                
+                // contract's bal after waithdraw
+                const contractBalanceAfterWithdraw = await randomIpfsNft.getBalance()
+                // console.log(`contractBalanceAfterWithdraw: ${contractBalanceAfterWithdraw}`)
+                // Deployer bal after withdraw
+                const deployerBalanceAfterWithdraw = await accounts[0].getBalance()
+                // console.log(`deployerBalanceAfterWithdraw: ${deployerBalanceAfterWithdraw}`)
+                // 2 asserts
+                assert.equal(contractBalanceAfterWithdraw.toString(), "0")  
+                // contract was definitely funded bcz we've already tested requestNft() - works fine
+                // console.log(`(Finally, deployerBalanceAfterFunding.add(contractBalanceAfterFunding)): ${(deployerBalanceAfterFunding.add(contractBalanceAfterFunding))}`)
+                // console.log(`FInally, deployerBalanceAfterWithdraw: ${deployerBalanceAfterWithdraw}`)
+                
+                // Method # 1 - hard coded the total gas used
+                // assert.equal((deployerBalanceAfterWithdraw.add(43598932072524)).toString(), (deployerBalanceAfterFunding.add(contractBalanceAfterFunding)).toString())
+
+                // Method # 2 - programatically calc. total gas used = gasCost = 43,598,932,072,524
+                assert.equal((deployerBalanceAfterWithdraw.add(gasCost)).toString(), (deployerBalanceAfterFunding.add(contractBalanceAfterFunding)).toString())
+
+                
+            })
+
+            // it.only("Should revert upon Transfer_Fail", async function () {
+            //     const contractBalance = await randomIpfsNft.getBalance()
+            //     console.log(`Balance: ${contractBalance}`)
+            //     await expect(randomIpfsNft.withdraw()).to.be.revertedWith("RandomIpfsNft__TransferFailed")
+            // })
+
+            it.only("Should only be withdrawn by the Owner / Artist", async function () {
+                const accounts = await ethers.getSigners()
+                const randomIpfsNftNewAccount = await ethers.getContract("RandomIpfsNft", accounts[1])
+                // also works fine with accounts[1].address (as we connect the contract instance with the deployer = accounts[0].address)
+                await expect(randomIpfsNftNewAccount.withdraw()).to.be.revertedWith("Ownable: caller is not the owner")
+                // onlyOwner modifier in Ownable.sol has this revert string
+            })
         })
     })

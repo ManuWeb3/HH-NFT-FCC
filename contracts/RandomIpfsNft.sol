@@ -82,7 +82,8 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
 
     //  hence, MAPPING
     address dogOwner = s_requestIdToSender[requestId];  /*assert*/
-    uint256 newTokenId = s_tokenCounter;                /*assert*/
+    uint256 newTokenId = s_tokenCounter;                // check Patrick, Aly's tests, & COVERAGE...if it's need to be checked
+    // if need be, include it in event OR make public / private+getter
     // increment the tokenCounter for the next, whenever it happens
     s_tokenCounter++;                                   /*assert*/
     // incremented before _safeMint() below but after assigning its own value to newTokenId
@@ -110,7 +111,7 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     // that's why have to use _setTokenUri() here, depending upon which of the 3 pictures, RANDOMLY,... 
     // the dogOnwer got lnked to in this minting.
     // Not needed in BasicNFT.sol as onl 1 constant tokenURI was there 
-    emit NftMinted(dogBreed, dogOwner);                     /*assert*/
+    emit NftMinted(dogBreed, dogOwner);                     
     }
 
     // Last part: Withdrawal by artist / owner who created those 'varying-rarity' images that users want to (mint and ) own
@@ -181,6 +182,10 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
 
     function getSubscriptionId() public view returns (uint256) {
         return i_subscriptionId;
+    }
+
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
     }
 
 }
