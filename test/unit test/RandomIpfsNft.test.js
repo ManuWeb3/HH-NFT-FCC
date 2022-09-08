@@ -1,6 +1,7 @@
+// In total, 21 Unit tests written.
+
 const { assert, expect } = require("chai")
-const { mnemonicToSeed } = require("ethers/lib/utils")
-const { deployments, getNamedAccounts, ethers, network, getChainId } = require("hardhat")
+const { deployments, getNamedAccounts, ethers, network } = require("hardhat")
 const { developmentChains, networkConfig } = require("../../helper-hardhat-config")
 
 !developmentChains.includes(network.name) ? describe.skip : describe("Random IPFS NFT: Unit Tests", function () {
@@ -56,15 +57,6 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
             // Mock runs only at our local n/w, so value will be 1 bcz initial value is 0, as per Mock contract
         })
 
-        it("TokenURIs are set correctly", async function() {
-            const tokenUri0 = await randomIpfsNft.getDogURIs(0)
-            const tokenUri1 = await randomIpfsNft.getDogURIs(1)
-            const tokenUri2 = await randomIpfsNft.getDogURIs(2)
-            assert.equal(tokenUri0.toString(), "ipfs://QmPsddgwx2s4HE5V9so61eSR3NfGgJMkHgpTRBw1jnmTrH")
-            assert.equal(tokenUri1.toString(), "ipfs://QmYzrvrN5pSqx19qXUCvJm4uau1rcpytPJGzzBkJQDdv82")
-            assert.equal(tokenUri2.toString(), "ipfs://QmPU6NzQQFJKWJ6MukigvnU4D2GWTvcTtSqQu1U735UNqV")
-        })
-
         it("MintFee is set correctly", async function() {
             const mintFee = await randomIpfsNft.getMintFee()
             assert.equal(mintFee.toString(), networkConfig[chainId].mintFee)
@@ -106,7 +98,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
         })
 
         // Event emit has already been checked thru retrieval of requestId above...
-        // likewise we did in Raffle.sol and we can leave it there..
+        // likewise we did in Raffle.sol and we can leave it there...
         // Still, checking event.
         it("Should emit NftRequested event - withArgs: RequestId & deployer", async function () {
             const mintFee = await randomIpfsNft.getMintFee()
@@ -117,25 +109,58 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
         })
      })
 
-     /* describe ("Testing getChanceArray()", function () {
+     describe ("Testing getChanceArray()", function () {
         it("Should return the array of 3 uint256 Constants", async function() {
             let chanceValues = []
             chanceValues = await randomIpfsNft.getChanceArray()
+            const maxValue = await randomIpfsNft.MAX_CHANCE_VALUE()
             assert.equal(chanceValues[0].toString(), "10")
             assert.equal(chanceValues[1].toString(), "30")
-            assert.equal(chanceValues[2].toString(), await randomIpfsNft.MAX_CHANCE_VALUE().toString())
+            assert.equal(chanceValues[2].toString(), maxValue.toString())
+            // Below, does not resolve the Prmoise
+            // assert.equal(chanceValues[2].toString(), await randomIpfsNft.MAX_CHANCE_VALUE().toString())
         })
-     })*/
+     })
 
      describe("Testing getBreedFromModdedRng()", function() {
-        it("Should return correct Dog Breed", async function() {
-            const dogBreed = await randomIpfsNft.getBreedFromModdedRng(99)
+        // Method # 1: checks 3 values upon static input, 1 for each dogBreed
+
+        // it("Should return correct Dog Breed", async function() {
+        //     const dogBreed = await randomIpfsNft.getBreedFromModdedRng(99)
+        //     assert.equal(dogBreed, "2")
+        // })
+
+        // Method # 2: Better to make 3 it()s, 1 for each dogBreed
+        // OR put all 3 asserts in the same it() with comments for each dogBreed
+        it("Should return 'Pug' for any moddedRng value: 0-9", async function () {
+            const dogBreed = await randomIpfsNft.getBreedFromModdedRng(7)
+            assert.equal(dogBreed, "0")
+        })
+
+        it("Should return 'Shiba_Inu' for any moddedRng value: 10-29", async function () {
+            const dogBreed = await randomIpfsNft.getBreedFromModdedRng(29)
+            assert.equal(dogBreed, "1")
+        })
+
+        it("Should return 'St_Bernard' for any moddedRng value: 30-99", async function () {
+            const dogBreed = await randomIpfsNft.getBreedFromModdedRng(88)
             assert.equal(dogBreed, "2")
         })
 
-        it("Should revert with Out-of-bounds moddedRng number", async function() {
+        // better keeping this assert separate
+        it("Should revert with Out-of-bounds moddedRng number, e.g. 100", async function() {
             await expect(randomIpfsNft.getBreedFromModdedRng(100)).to.be.reverted
         })
+
+        // test-checking for all values 0-9 for 'Pug'
+        /*
+        it("Should check for all the values b/w 0-9 for 'Pug'", async function() {
+            for (let i=0; i <= 9; i++) {
+            const dogBreed = await randomIpfsNft.getBreedFromModdedRng(i)
+            assert.equal(dogBreed, "0")
+            }
+        })
+        */
      })
 
      // 2 asserts in 1 test, Massive Promise test again bcz we want to imitate the testnet exactly on local dev. n/w
@@ -170,6 +195,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                         const incTokenCounter = await randomIpfsNft.getTokenCounter()
                         assert.equal(tokenCounter.toNumber()+1, incTokenCounter.toString())
                         // .toString() concatenates '0' and '1' to '01', hence mismatch with '1'.
+                        
                         resolve()
                     }
                     catch(error) {
@@ -189,16 +215,24 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
             // code another beforeEach() if requestNft() is repetitively needed for every it() for later withdrawal
 
+            it("Should only be withdrawn by the Owner / Artist", async function () {
+                const accounts = await ethers.getSigners()
+                const randomIpfsNftNewAccount = await ethers.getContract("RandomIpfsNft", accounts[1])
+                // also works fine with accounts[1].address (as we connect the contract instance with the deployer = accounts[0].address)
+                await expect(randomIpfsNftNewAccount.withdraw()).to.be.revertedWith("Ownable: caller is not the owner")
+                // onlyOwner modifier in Ownable.sol has this revert string
+            })
+
             it("Should send all the balance of the contract to the deployer - Single Minter", async function() {
                 const accounts = await ethers.getSigners()
                 // Fund the contract
                 const mintFee = await randomIpfsNft.getMintFee()
                 await randomIpfsNft.requestNft({value: mintFee})
                 // get Contract's balance after funding - custom f() getBalance()
-                const contractBalanceAfterFunding = await randomIpfsNft.getBalance()
+                const contractBalanceAfterMinting = await randomIpfsNft.getBalance()
                 // console.log(`contractBalanceAfterFunding: ${contractBalanceAfterFunding}`)
                 // get deployer's balance after funcding - standard f() getBalance()
-                const deployerBalanceAfterFunding = await accounts[0].getBalance()
+                const deployerBalanceAfterMinting = await accounts[0].getBalance()
                 // console.log(`deployerBalanceAfterFunding: ${deployerBalanceAfterFunding}`)
                 // Withdraw from the contract
                 // INVOKED BY THE DEPLOYER, GAS SPENT OUT OF ITS BALANCE = 43,598,932,072,524...copy @ Sep 06.
@@ -225,23 +259,67 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                 // assert.equal((deployerBalanceAfterWithdraw.add(43598932072524)).toString(), (deployerBalanceAfterFunding.add(contractBalanceAfterFunding)).toString())
 
                 // Method # 2 - programatically calc. total gas used = gasCost = 43,598,932,072,524
-                assert.equal((deployerBalanceAfterWithdraw.add(gasCost)).toString(), (deployerBalanceAfterFunding.add(contractBalanceAfterFunding)).toString())
-
-                
+                assert.equal((deployerBalanceAfterWithdraw.add(gasCost)).toString(), (deployerBalanceAfterMinting.add(contractBalanceAfterMinting)).toString())
+               
             })
 
-            // it.only("Should revert upon Transfer_Fail", async function () {
+            // it("Should revert upon Transfer_Fail", async function () {
             //     const contractBalance = await randomIpfsNft.getBalance()
             //     console.log(`Balance: ${contractBalance}`)
             //     await expect(randomIpfsNft.withdraw()).to.be.revertedWith("RandomIpfsNft__TransferFailed")
             // })
 
-            it.only("Should only be withdrawn by the Owner / Artist", async function () {
+            it("Should send all the balance of the contract to the deployer - Multiple Minters", async function() {
+                const mintFee = await randomIpfsNft.getMintFee()
                 const accounts = await ethers.getSigners()
-                const randomIpfsNftNewAccount = await ethers.getContract("RandomIpfsNft", accounts[1])
-                // also works fine with accounts[1].address (as we connect the contract instance with the deployer = accounts[0].address)
-                await expect(randomIpfsNftNewAccount.withdraw()).to.be.revertedWith("Ownable: caller is not the owner")
-                // onlyOwner modifier in Ownable.sol has this revert string
+                const contractBalanceBeforeMinting = await randomIpfsNft.getBalance()
+                // for loop to .connect() all Minters
+                let additionalMinters = 3
+                for(let i = 1; i <= additionalMinters; i++) {        // except the artist / owner (deployer) himself
+                    const randomIpfsNftMinters = await randomIpfsNft.connect(accounts[i])
+                    // 'randomIpfsNft' - orig. abstraction instance only is used to .connect( to all new accounts) and...
+                    //  return new connections / copies, each with the name 'randomIpfsNftMinters' of 'randomIpfsNft'
+                    await randomIpfsNftMinters.requestNft({value: mintFee})
+                }
+                const deployerBalanceAfterMinting = await accounts[0].getBalance()      // after minting by other 3 minters
+                const contractBalanceAfterMinting = await randomIpfsNft.getBalance()
+                // estimating gasCost in .withdraw() for addBack.
+                const tx = await randomIpfsNft.withdraw()
+                const txReceipt = await tx.wait(1)
+                const {gasUsed, effectiveGasPrice} = txReceipt
+                const gasCost = gasUsed.mul(effectiveGasPrice)
+                const deployerBalanceAfterWithdraw = await accounts[0].getBalance()
+                const contractBalanceAfterWithdraw = await randomIpfsNft.getBalance()
+
+                // 1. assert to tally contract balance afetr minting
+                assert.equal(contractBalanceAfterMinting.toString(), (mintFee.mul(additionalMinters)).toString())   
+                
+                // 2. assert to tally deployer-balance after minting and after withdraw
+                assert.equal((deployerBalanceAfterMinting.add(mintFee.mul(additionalMinters))).toString(), (deployerBalanceAfterWithdraw.add(gasCost)).toString())
+                // 3. (optional) assert to tally start and end balances of the contract = '0'
+                assert.equal(contractBalanceBeforeMinting.toString(), contractBalanceAfterWithdraw.toString())
+            })
+        })
+
+        describe("Testing _initializeContract()", function() {
+            it("Should revert if Contract (s_dogTokenUris) is re-initialized", async function () {
+                let testTokenUris = ["a", "b", "c"]
+                await expect(randomIpfsNft._initializeContract(testTokenUris)).to.be.revertedWith("RandomIpfsNft__AlreadyInitialized")
+            })
+
+            // to check whether 's_dogTokenURIs' is set to all 3 URI-values
+            it("TokenURIs are set correctly", async function() {
+                const tokenUri0 = await randomIpfsNft.getDogURIs(0)
+                const tokenUri1 = await randomIpfsNft.getDogURIs(1)
+                const tokenUri2 = await randomIpfsNft.getDogURIs(2)
+                assert.equal(tokenUri0.toString(), "ipfs://QmPsddgwx2s4HE5V9so61eSR3NfGgJMkHgpTRBw1jnmTrH")
+                assert.equal(tokenUri1.toString(), "ipfs://QmYzrvrN5pSqx19qXUCvJm4uau1rcpytPJGzzBkJQDdv82")
+                assert.equal(tokenUri2.toString(), "ipfs://QmPU6NzQQFJKWJ6MukigvnU4D2GWTvcTtSqQu1U735UNqV")
+            })
+
+            it("should set s_initialized to 'true' after deployment", async function () {
+                const initValue = await randomIpfsNft.getInitializedBool()
+                assert.equal(initValue, true)
             })
         })
     })

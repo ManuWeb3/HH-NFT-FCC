@@ -1,3 +1,5 @@
+// In total, 04 Unit tests written.
+
 const { assert, expect } = require("chai")
 const { deployments, getNamedAccounts, ethers, network } = require("hardhat")
 const { developmentChains, networkConfig } = require("../../helper-hardhat-config")

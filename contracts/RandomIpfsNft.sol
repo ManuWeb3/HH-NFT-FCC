@@ -11,6 +11,7 @@ import "hardhat/console.sol";
 error RandomIpfsNft__RangeOutOfBounds();
 error RandomIpfsNft__NeedMoreETHSent();
 error RandomIpfsNft__TransferFailed();
+error RandomIpfsNft__AlreadyInitialized();
 
 contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     //  still ERC721's construcotr will remain as is in our code
@@ -42,7 +43,7 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
 
     //  NFT variables
     uint256 private s_tokenCounter;
-    uint256 internal constant MAX_CHANCE_VALUE = 100;
+    uint256 public constant MAX_CHANCE_VALUE = 100;             // make 'public' for Unit-testing
     bool private s_initialized;
     // to see if the enum Breed 
 
@@ -56,10 +57,19 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
         i_gasLane = gasLane;
         i_callbackGasLimit = callbackGasLimit;
         i_subscriptionId = subscriptionId;
-        s_dogTokenURIs = dogTokenUris;
+        _initializeContract(dogTokenUris);
         i_mintFee = mintFee;
     }
 
+    // kept 'private' but can change depending upon the product specs. in Production
+    function _initializeContract(string[3] memory tokenURIs) public {               // make 'public' for Unit-testing
+        if (s_initialized) {
+            revert RandomIpfsNft__AlreadyInitialized();
+        }
+        s_dogTokenURIs = tokenURIs;
+        s_initialized = true;
+    }
+    
     //  need payment here alongwith
     function requestNft() public payable returns (uint256 requestId) {            //  trigger Chainlink VRF's requestRandomWords()...
     //  this time we're doing it manually by users, NOT automating it, NOT using CL Keepers unlike Raffle
@@ -92,9 +102,9 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     //  only 1 Random word / number requested, so array index = 0 only
     uint256 moddedRng = randomWords[0] % 100;           
     //  returns 0-99
-    //  0-9: Dog
-    //  10-29: Shiba Inu
-    //  30-99: St. Bernard
+    //  10%: 0-9: Dog
+    //  30%: 10-39: Shiba Inu
+    //  60%: 40-99: St. Bernard
 
     //  select the Dog Breed
     Breed dogBreed = getBreedFromModdedRng(moddedRng);  
@@ -148,11 +158,12 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     //  Part 3: Create Rarity of 3 dogs
     //  internal so that called internally only
     //  view as returning only constant array + memory declaration
-    function getChanceArray() internal pure returns(uint256[3] memory) {
-        return [10, 30, MAX_CHANCE_VALUE];
-    //  10% chance - Dog
-    //  20% - Shiba inu
-    //  70% - St. Bernard   (not 60%)
+    function getChanceArray() public pure returns(uint256[3] memory) {            // make 'public' for Unit-testing
+        return [10, 40, MAX_CHANCE_VALUE];
+    //  Rarity array
+    //  10% chance - Pug
+    //  30% - Shiba inu
+    //  60% - St. Bernard
     }
 
     //  this f() not needed anymore bcz we're using _setTokenURI() of ERC721URIStorage.sol to map tokenIds and tokenURIs
@@ -186,6 +197,10 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
+    }
+
+    function getInitializedBool() public view returns (bool) {
+        return s_initialized;
     }
 
 }
