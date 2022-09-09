@@ -73,9 +73,14 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
      })
     
      describe("Testing requestNft()", function() {
-        it("Should revert if insufficient funds sent", async function () {
+        it("Should revert if no payment (mintFee) sent", async function () {
             // call with value: 0 OR skipping value: arg altogether
             await expect(randomIpfsNft.requestNft()).to.be.revertedWith("RandomIpfsNft__NeedMoreETHSent")
+        })
+
+        it("Should revert if amount less than mintFee is sent", async function () {
+            const mintFee = await randomIpfsNft.getMintFee()
+            await expect(randomIpfsNft.requestNft({value: mintFee.sub(ethers.utils.parseEther("0.0001"))})).to.be.revertedWith("RandomIpfsNft__NeedMoreETHSent") 
         })
 
         it("RRW() should run only when requestNft() is invoked", async function () {
@@ -102,9 +107,11 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
         // Still, checking event.
         it("Should emit NftRequested event - withArgs: RequestId & deployer", async function () {
             const mintFee = await randomIpfsNft.getMintFee()
+            // get the requestId out of emit to check: withArgs(requestId.toNumber()+1, deployer): optional
             const txResponse = await randomIpfsNft.requestNft({value: mintFee})
             const txReceipt = await txResponse.wait(1)
             const requestId = txReceipt.events[1].args.requestId
+
             await expect(randomIpfsNft.requestNft({value: mintFee})).to.emit(randomIpfsNft, "NftRequested").withArgs(requestId.toNumber()+1, deployer)
         })
      })
@@ -115,7 +122,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
             chanceValues = await randomIpfsNft.getChanceArray()
             const maxValue = await randomIpfsNft.MAX_CHANCE_VALUE()
             assert.equal(chanceValues[0].toString(), "10")
-            assert.equal(chanceValues[1].toString(), "30")
+            assert.equal(chanceValues[1].toString(), "40")
             assert.equal(chanceValues[2].toString(), maxValue.toString())
             // Below, does not resolve the Prmoise
             // assert.equal(chanceValues[2].toString(), await randomIpfsNft.MAX_CHANCE_VALUE().toString())
@@ -166,22 +173,8 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
      // 2 asserts in 1 test, Massive Promise test again bcz we want to imitate the testnet exactly on local dev. n/w
      // Exception. Ideally, 1 assert per it()
      describe("Testing fulfillRandomWords()", function () {
-        it("Should set 'deployer' inside _safeMint(), increments tokenCounter, and then emits event ", async function () {
-            const mintFee = await randomIpfsNft.getMintFee()
-            // call requestNft() by deployer (minter)... has to be called once here anyway...
-            // only then the process kicks off and eventually, ffRW2() will be called
-            const txResponse = await randomIpfsNft.requestNft({value: mintFee})
-            const txReceipt = await txResponse.wait(1)
-            const requestId = txReceipt.events[1].args.requestId
+        it("Should increment tokenCounter and then emits event ", async function () {
             // 1. assert
-            // re-check 's_requestIdToSender' mapping, why?...
-            // earlier we just checked that the mapping-assigning works...
-            // now, we're checking that despite CL VRF node being the msg.sender of this ffRW2(), the _safeMint() links the tokenId to the deployer only...
-            // bcz 1st arg that it _safeMint() takes is msg.sender
-            
-            const minter = await randomIpfsNft.s_requestIdToSender(requestId)       
-
-            // 2. assert
             tokenCounter = await randomIpfsNft.getTokenCounter()        // it is '0' for now
             
             await new Promise (async function (resolve, reject) {
@@ -190,8 +183,6 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                     // get all latest values after ffRW2() has run, for asserts.
                     try {
                         // 1. assert
-                        assert.equal(minter, deployer)
-                        // 2. assert
                         const incTokenCounter = await randomIpfsNft.getTokenCounter()
                         assert.equal(tokenCounter.toNumber()+1, incTokenCounter.toString())
                         // .toString() concatenates '0' and '1' to '01', hence mismatch with '1'.
@@ -204,9 +195,26 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                         reject(error)
                     }
                 })
+                
+                // below code has to be inside Promise block {} as it is 'await' waiting for the event to be fired and then resolve / reject the Promise
+                // keeping inside try-catch so that we get to know the error, in case it fails here
+                try{
+                const mintFee = await randomIpfsNft.getMintFee()
+                // call requestNft() by deployer (minter)... has to be called once here anyway...
+                // only then the process kicks off and eventually, ffRW2() will be called
+                const txResponse = await randomIpfsNft.requestNft({value: mintFee})
+                const txReceipt = await txResponse.wait(1)
+                const requestId = txReceipt.events[1].args.requestId
                 // outside event but inside the Promise block...
                 // manually invoke ffRW1(), we mimic being the CL VRF here to emit the event "NftMinted" eventually
                 await vrfCoordinatorV2.fulfillRandomWords(requestId, randomIpfsNft.address) 
+                // "NftMinted" event gets emitted when ffRW2() is executed till end
+                }
+                catch (error) {
+                    console.log(error)
+
+                    reject(error)   // reject(error) here also in case it fails but resolve only once.
+                }
                 })
             })
         })
@@ -312,6 +320,11 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                 const tokenUri0 = await randomIpfsNft.getDogURIs(0)
                 const tokenUri1 = await randomIpfsNft.getDogURIs(1)
                 const tokenUri2 = await randomIpfsNft.getDogURIs(2)
+                // Method # 1
+                assert.equal(tokenUri0.toString().includes("ipfs://"), true)
+                // OR assert(tokenUri0.includes("ipfs://"))
+
+                // Method # 2, to check complete value of URI string
                 assert.equal(tokenUri0.toString(), "ipfs://QmPsddgwx2s4HE5V9so61eSR3NfGgJMkHgpTRBw1jnmTrH")
                 assert.equal(tokenUri1.toString(), "ipfs://QmYzrvrN5pSqx19qXUCvJm4uau1rcpytPJGzzBkJQDdv82")
                 assert.equal(tokenUri2.toString(), "ipfs://QmPU6NzQQFJKWJ6MukigvnU4D2GWTvcTtSqQu1U735UNqV")

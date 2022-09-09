@@ -91,11 +91,11 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     //  bcz CL node is msg.sender that invokes ffRW2() internally
 
     //  hence, MAPPING
-    address dogOwner = s_requestIdToSender[requestId];  /*assert*/
-    uint256 newTokenId = s_tokenCounter;                // check Patrick, Aly's tests, & COVERAGE...if it's need to be checked
+    address dogOwner = s_requestIdToSender[requestId];  // mapping-assignment already unit-tested in requestNft()
+    uint256 newTokenId = s_tokenCounter;                
     // if need be, include it in event OR make public / private+getter
     // increment the tokenCounter for the next, whenever it happens
-    s_tokenCounter++;                                   /*assert*/
+    s_tokenCounter++;                                   
     // incremented before _safeMint() below but after assigning its own value to newTokenId
 
     //  modded values

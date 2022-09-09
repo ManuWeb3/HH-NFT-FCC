@@ -8,12 +8,13 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
     let basicNft, deployer, tokenCounter                            // better to keet it global scope
 
     beforeEach(async function () {
-        console.log("BasicNft.sol deploying...")
+        // console.log("BasicNft.sol deploying...")
         deployer = (await getNamedAccounts()).deployer
-        await deployments.fixture(["all"])
+        await deployments.fixture(["all"]) // control will shift to deploying all scripts in the deploy folder
+        // not deployed repetitively at beforeEach it() below
 
         basicNft = await ethers.getContract("BasicNft", deployer)
-        console.log("BasicNft.sol deployed!!")
+        // console.log("BasicNft.sol deployed!!")
     })
 
     describe ("Testing Constructor", function () {
