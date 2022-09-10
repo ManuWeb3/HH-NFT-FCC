@@ -31,7 +31,7 @@ contract DynamicSvgNft is ERC721 {
     // i/p: 'svg' from constructor
     // o/p: 'base64Encoded-imageUri'
     function svgToImageUri(string memory svg) public pure returns (string memory) {
-
+        
     // packed: 10k feet view: concatenate strings
     // abi.encodePacked: globally available methods, returns bytes, we typecast it to string
     // concatenate 2 strings -> cast to bytes equivalent, that to in packed form -> cast to string
