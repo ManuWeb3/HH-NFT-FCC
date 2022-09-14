@@ -16,25 +16,37 @@ contract DynamicSvgNft is ERC721 {
     // Logic for switching b/w X-image to Y-image
 
     uint256 private s_tokenCounter;
-    // both the i_Uris below will have the Base64.encoded string as hardcoded, NOT their respective SVG texts
-    string private immutable i_lowSvgUri;
-    string private immutable i_highSvgUri;
+    // both the i_Uris below will have the Base64.encoded string as hardcoded,...
+    // NOT their respective SVG texts
+    string private s_lowSvgUri;
+    string private s_highSvgUri;
     // both these 2 state variables have now Base64.encoded values saved in them ON-CHAIN
     // that's how you bring metadata (and SVG images) ON-CHAIN
     string private constant base64EncodedSvgPrefix = "data:image/svg+xml;base64,";
     AggregatorV3Interface internal immutable i_priceFeed;
+    mapping(uint256 => int256) public s_tokenIdToHighValue;
+    // bcz 'price' returned by CL node is int256, so will be the type of 'highValue'
+
+    event CreatedNFT(uint256 indexed tokenId, int256 highValue);
+    // tokenID viz-a-viz threshold set
 
     // lowSvg and highSvg are the images that'll be input here, hence immutable
+    // priceFeedAddress: set in the 'deploy' script
+    // For lowSvg, highSvg: import in a new folder and read those in 'deploy' script
     constructor(address priceFeedAddress, string memory lowSvg, string memory highSvg) ERC721 ("Dynamic SVG NFT", "DSN") {
         s_tokenCounter = 0;
-        i_lowSvgUri = svgToImageUri(lowSvg);
-        i_highSvgUri = svgToImageUri(highSvg);
+        s_lowSvgUri = svgToImageUri(lowSvg);
+        s_highSvgUri = svgToImageUri(highSvg);
+        i_priceFeed = AggregatorV3Interface(priceFeedAddress);
     }
 
     // No mintFee, on purpose, hence not payable
-    function mintNft() public {
+    // give minter the choice to set their threshold of High Value for highSvgUri
+    function mintNft(int256 highValue) public {
         s_tokenCounter++;
         _safeMint(msg.sender, s_tokenCounter);
+        s_tokenIdToHighValue[s_tokenCounter] = highValue;
+        // threshold value assigned to minter's token
     }
 
     function svgToImageUri(string memory svg) public pure returns (string memory) {
@@ -44,7 +56,7 @@ contract DynamicSvgNft is ERC721 {
         return string(abi.encodePacked(base64EncodedSvgPrefix, svgBase64Encoded));
     }
 
-    function _baseURI() internal view override returns (string memory) {
+    function _baseURI() internal pure override returns (string memory) {
         return "data:application/json;base64,";
     }
 
@@ -54,7 +66,15 @@ contract DynamicSvgNft is ERC721 {
         if(!_exists(tokenId)) {
             revert DynamicSvgNft__NonexistentTokenId();
         }
-        string memory imageURI = "hi"; // sample URI
+
+        ( ,int256 price, , , ) = i_priceFeed.latestRoundData();         // default return type is int256, NOT uint256
+
+        string memory imageURI = s_lowSvgUri;
+        // minter's set threshold compared below
+        if(price >= s_tokenIdToHighValue[tokenId]) {
+            imageURI = s_highSvgUri;
+        }
+
         // hardcode JSON format metadata
         // using abi.encode only for concat, NOT using it's true 'powers'
         // all concats will take place inside '....' - single quote and put ',' comma after one string is over, before starting next string

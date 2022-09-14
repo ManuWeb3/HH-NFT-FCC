@@ -10,6 +10,7 @@ const networkConfig = {
         callbackGasLimit: "500000",                                                     // set high: 500,000 gas units
         interval: "30",                                                                  // 30 seconds
         mintFee: "10000000000000000",           // 0.01 ETH
+        ethUsdPriceFeed: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
     },
     31337: {
         name: "hardhat",
@@ -21,6 +22,7 @@ const networkConfig = {
         interval: "30",                                                                  // 30 seconds, it DOES matter here
         // subscriptionId: NOT needed here because we're deploying mocks on "hardhat" and "localhost"
         mintFee: "10000000000000000",           // 0.01 ETH    
+        // ethUsdPriceFeed: "we're gonna use Mock, hence, nothing required here"
     }
 }
 
