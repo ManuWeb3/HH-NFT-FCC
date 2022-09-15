@@ -53,6 +53,7 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     
     //  usual functions()
     constructor (address vrfCoordinator, bytes32 gasLane, uint32 callbackGasLimit, uint64 subscriptionId, string[3] memory dogTokenUris, uint256 mintFee) VRFConsumerBaseV2 (vrfCoordinator) ERC721 ("Random IPFS NFT", "RIN") {
+        s_tokenCounter = 0 ;
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinator);
         i_gasLane = gasLane;
         i_callbackGasLimit = callbackGasLimit;
@@ -92,10 +93,10 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
 
     //  hence, MAPPING
     address dogOwner = s_requestIdToSender[requestId];  // mapping-assignment already unit-tested in requestNft()
-    uint256 newTokenId = s_tokenCounter;                
+    uint256 newTokenId = ++s_tokenCounter;                
     // if need be, include it in event OR make public / private+getter
     // increment the tokenCounter for the next, whenever it happens
-    s_tokenCounter++;                                   
+    // s_tokenCounter++; already pre-incremented above                                   
     // incremented before _safeMint() below but after assigning its own value to newTokenId
 
     //  modded values
@@ -119,9 +120,10 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     _setTokenURI(newTokenId, s_dogTokenURIs[uint256(dogBreed)]);
     // we have 3 constant TokenURIs here but still have to link every minted NFT token to one of those 3... 
     // that's why have to use _setTokenUri() here, depending upon which of the 3 pictures, RANDOMLY,... 
-    // the dogOnwer got lnked to in this minting.
-    // Not needed in BasicNFT.sol as onl 1 constant tokenURI was there 
+    // the dogOnwer got linked to in this minting.
+    // Not needed in BasicNFT.sol as onl 1 constant tokenURI was there     
     emit NftMinted(dogBreed, dogOwner);                     
+    // emit Transfer(address(0), dogOwner, newTokenId);
     }
 
     // Last part: Withdrawal by artist / owner who created those 'varying-rarity' images that users want to (mint and ) own

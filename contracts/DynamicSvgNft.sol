@@ -5,6 +5,7 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "base64-sol/base64.sol";
+import "hardhat/console.sol";
 // no need for _setTokenURI(id)...so, no need to import ERC721URIStorage.sol here
 // node_modules is never prepended in the path of any file being imported here
 
@@ -14,7 +15,8 @@ contract DynamicSvgNft is ERC721 {
     // mint
     // store SVG info somewhere
     // Logic for switching b/w X-image to Y-image
-
+    
+    //int256 public s_returnedPrice;
     uint256 private s_tokenCounter;
     // both the i_Uris below will have the Base64.encoded string as hardcoded,...
     // NOT their respective SVG texts
@@ -68,14 +70,14 @@ contract DynamicSvgNft is ERC721 {
         }
 
         ( ,int256 price, , , ) = i_priceFeed.latestRoundData();         // default return type is int256, NOT uint256
-
+        // s_returnedPrice = price;
         string memory imageURI = s_lowSvgUri;
         // minter's set threshold compared below
         if(price >= s_tokenIdToHighValue[tokenId]) {
             imageURI = s_highSvgUri;
         }
 
-        // hardcode JSON format metadata
+        // hardcode: JSON format metadata - returns metadataURI
         // using abi.encode only for concat, NOT using it's true 'powers'
         // all concats will take place inside '....' - single quote and put ',' comma after one string is over, before starting next string
         

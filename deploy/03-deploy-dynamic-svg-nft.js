@@ -18,6 +18,7 @@ module.exports = async function ({getNamedAccounts, deployments}) {     // get a
         ethUsdPriceFeedAddress = networkConfig[chainId].ethUsdPriceFeed
     }
     // after importing both svg files, read those in this script for deployment
+    // <svg>...</svg> tags: string is read into these 2 vars
     const lowSvg = await fs.readFileSync("./images/DynamicSvgNft/frown.svg", {encoding: "utf8"})
     const highSvg = await fs.readFileSync("./images/DynamicSvgNft/happy.svg", {encoding: "utf8"})
 

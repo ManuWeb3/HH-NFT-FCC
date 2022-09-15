@@ -1,6 +1,6 @@
 // Mint script to mint all 3 of our NFTs
 
-const {Ethers, network, ethers} = require("hardhat")
+const {network, ethers} = require("hardhat")
 const { developmentChains } = require("../helper-hardhat-config")
 
 let tokenId
@@ -27,9 +27,11 @@ module.exports = async function ({getNamedAccounts}) {     // get auto-pulled fr
     await new Promise(async (resolve, reject) => {
         // std. f()
         setTimeout(resolve, 300000)                         // 5 mints. Earlier, in config file
+        // Event Listener
         randomIpfsNft.once("NftMinted", async function() {
             // no asserts as this is not a Unit test, direct resolve() at the end
             resolve()
+            console.log("Promise successfully resolved!!")
             // can add try{}, catch{}, and reject(error)
         })
     
@@ -49,11 +51,24 @@ module.exports = async function ({getNamedAccounts}) {     // get auto-pulled fr
     }
 })  // all this comes inside Promise, outside the Listener
 
-tokenId = await randomIpfsNft.getTokenCounter()     // tokenId inc. by now (inside ffRW2())
+tokenId = await randomIpfsNft.getTokenCounter()             // tokenId inc. by now (inside ffRW2())
+console.log(`TokenId value post-mint(): ${tokenId}`)
 console.log(`Random Ipfs Nft with tokenID: ${tokenId} has tokenURI: ${await randomIpfsNft.tokenURI(tokenId)}`)
 // same tokenURI irrespective of the tokenId in our BasicNft.sol (overridden tokenURI())
 
     // 3. Dynamic SVG On-chain NFT
-    
+    const highValue = ethers.utils.parseEther("4000")       // $4,000 ? OR 4,000 ETH...??
+    console.log(`High Value input: ${highValue}`)
 
+    const dynamicSvgNft = await ethers.getContract("DynamicSvgNft", deployer)
+    const dynamicSvgNftMintTx = await dynamicSvgNft.mintNft(highValue.toString())
+    await dynamicSvgNftMintTx.wait(1)
+
+    // const returnedPrice = await dynamicSvgNft.s_returnedPrice()
+    // console.log(`Returned Price: ${returnedPrice}`)
+
+    tokenId = await dynamicSvgNft.getTokenCounter()
+    console.log(`Dynamic SVG NFT with TokenId: ${tokenId} has tokenURI: ${await dynamicSvgNft.tokenURI(tokenId)}`)
 }
+
+module.exports.tags = ["all", "mint"]

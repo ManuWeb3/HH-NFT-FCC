@@ -92,7 +92,7 @@ module.exports = async function ({getNamedAccounts, deployments}) {     // get a
         from: deployer,
         args: args,
         log: true,
-        waitConfirmations: 1,
+        waitConfirmations: network.config.blockConfirmations,
     })
 
     console.log("--------Random IPFS NFT deployed!!---------")
@@ -144,3 +144,4 @@ async function handleTokenUris() {
 
 module.exports.tags = ["all", "randomipfsnft", "main"]
 // no spacing allowed in the tags' naming in hh deploy --tags
+// "main" tag iskept here for adding this consumer contract to the VRF subscription
