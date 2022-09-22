@@ -20,6 +20,7 @@ const PRIVATE_KEY =
     process.env.PRIVATE_KEY || "e79d39e6ee8ff2e35064fbf8042e2ec7c2d45d1074d75f95625be80f00073417"
     const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY ||  "IJIWR1PQW9I2DYY7G82PWRXITN3TEV3QAC"
 const RINKEBY_RPC_URL = process.env.RINKEBY_RPC_URL ||  "https://eth-rinkeby.alchemyapi.io/v2/s-nj9OTPBrtTKzx7n2It6M2h_EUj55HR"
+const GOERLI_RPC_URL = process.env.GOERLI_RPC_URL || "https://eth-goerli.g.alchemy.com/v2/IQJlXQb4jj7QnaHfmbTSaIG77uffxL9K"
 
 module.exports = {
     defaultNetwork: "hardhat",
@@ -51,6 +52,13 @@ module.exports = {
           accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],    // it's always an array + // undefined is a keyword here
           //saveDeployments: true,      // details later ??
         },
+        goerli: {                    // 2nd kind of HH n/w = JSON-RPC based networks (external nodes incl. dummy Ganache)
+            chainId: 5,
+            blockConfirmations: 6,      // more needed as it's a testnet
+            url: GOERLI_RPC_URL,
+            accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],    // it's always an array + // undefined is a keyword here
+            //saveDeployments: true,      // details later ??
+          },
     },
     solidity: {
         compilers: [

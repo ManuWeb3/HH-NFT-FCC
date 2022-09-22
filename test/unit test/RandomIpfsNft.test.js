@@ -301,12 +301,11 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
                 // 1. assert to tally contract balance afetr minting
                 assert.equal(contractBalanceAfterMinting.toString(), (mintFee.mul(additionalMinters)).toString())   
-                
                 // 2. assert to tally deployer-balance after minting and after withdraw
                 assert.equal((deployerBalanceAfterMinting.add(mintFee.mul(additionalMinters))).toString(), (deployerBalanceAfterWithdraw.add(gasCost)).toString())
                 // 3. (optional) assert to tally start and end balances of the contract = '0'
                 assert.equal(contractBalanceBeforeMinting.toString(), contractBalanceAfterWithdraw.toString())
-            })
+            }) 
         })
 
         describe("Testing _initializeContract()", function() {

@@ -63,7 +63,7 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
     }
 
     // kept 'private' but can change depending upon the product specs. in Production
-    function _initializeContract(string[3] memory tokenURIs) public {               // make 'public' for Unit-testing
+    function _initializeContract(string[3] memory tokenURIs) private {               // make 'public' for Unit-testing
         if (s_initialized) {
             revert RandomIpfsNft__AlreadyInitialized();
         }
@@ -138,7 +138,7 @@ contract RandomIpfsNft is VRFConsumerBaseV2, ERC721URIStorage, Ownable {
         }
     }
 
-    function getBreedFromModdedRng(uint256 moddedRng) public pure returns (Breed) {
+    function getBreedFromModdedRng(uint256 moddedRng) internal pure returns (Breed) {
         uint256 cumulativeSum = 0;
         //  access ChanceArray
         uint256[3] memory chanceArray = getChanceArray();
