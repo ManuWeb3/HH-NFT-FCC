@@ -16,7 +16,7 @@ contract DynamicSvgNft is ERC721 {
     // store SVG info somewhere
     // Logic for switching b/w X-image to Y-image
     
-    //int256 public s_returnedPrice;
+    // int256 public s_returnedPrice;
     uint256 private s_tokenCounter;
     // both the i_Uris below will have the Base64.encoded string as hardcoded,...
     // NOT their respective SVG texts
@@ -29,6 +29,7 @@ contract DynamicSvgNft is ERC721 {
     mapping(uint256 => int256) public s_tokenIdToHighValue;
     // bcz 'price' returned by CL node is int256, so will be the type of 'highValue'
 
+    // event tokenURICreated(string indexed tokenURI);
     event CreatedNFT(uint256 indexed tokenId, int256 highValue);
     // tokenID viz-a-viz threshold set
 
@@ -48,6 +49,7 @@ contract DynamicSvgNft is ERC721 {
         s_tokenCounter++;
         _safeMint(msg.sender, s_tokenCounter);
         s_tokenIdToHighValue[s_tokenCounter] = highValue;
+        emit CreatedNFT(s_tokenCounter, highValue);
         // threshold value assigned to minter's token
     }
 
@@ -73,6 +75,7 @@ contract DynamicSvgNft is ERC721 {
         // s_returnedPrice = price;
         string memory imageURI = s_lowSvgUri;
         // minter's set threshold compared below
+        
         if(price >= s_tokenIdToHighValue[tokenId]) {
             imageURI = s_highSvgUri;
         }
@@ -85,6 +88,7 @@ contract DynamicSvgNft is ERC721 {
         
         // prepend: data:application/json;base64,BASE64THING
         // string(encodePacked) works but decode(encodePacked)=>string DOESN'T
+        
         return 
         string(abi.encodePacked(_baseURI(),                 // 2 brackets
             Base64.encode(bytes(abi.encode('{"name":"',     // 3 brackets
@@ -98,6 +102,7 @@ contract DynamicSvgNft is ERC721 {
         )
         )
         );
+        
     }
 
     function getTokenCounter() public view returns (uint256) {
