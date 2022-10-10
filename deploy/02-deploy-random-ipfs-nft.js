@@ -103,7 +103,7 @@ module.exports = async function ({getNamedAccounts, deployments}) {     // get a
         log("Verifying on Etherscan...")
         await verify(randomIpfsNft.address, args)
         //  it takes address and args of the S/C as parameters
-        log("-----------Verified---------------")
+        console.log("--------------------------")
     }
 }
 

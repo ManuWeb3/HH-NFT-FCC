@@ -40,7 +40,7 @@ module.exports = async function ({getNamedAccounts, deployments}) {     // get a
         log("Verifying on Etherscan...")
         await verify(dynamicSvgNft.address, args)
         //  it takes address and args of the S/C as parameters
-        log("-----------Verified---------------")
+        log("--------------------------")
     }
 }
 
