@@ -95,7 +95,7 @@ contract DynamicSvgNft is ERC721 {
             name(),
             '","description": "An NFT that changes its image based on the Chainlnk Price Feed"',
             '"image":"',
-            imageURI,
+            imageURI,       // low or highSvgUri
             '"attributes":[{"trait_type":"Cuteness", "value":"100"}]}'
         )
         )
